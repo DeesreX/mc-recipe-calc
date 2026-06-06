@@ -62,3 +62,10 @@ def test_numeric_parsers_report_user_friendly_errors() -> None:
 
     with pytest.raises(RecipeError, match="Price cannot be negative"):
         parse_non_negative_float("-1", "Price")
+
+
+def test_filter_items_matches_case_insensitive_substrings() -> None:
+    from recipe_calc.app import RecipeCostApp
+
+    assert RecipeCostApp.filter_items(["Iron Ingot", "Redstone Dust", "Wood"], "ing") == ["Iron Ingot"]
+    assert RecipeCostApp.filter_items(["Iron Ingot", "Redstone Dust"], "") == ["Iron Ingot", "Redstone Dust"]

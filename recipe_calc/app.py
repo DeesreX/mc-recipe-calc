@@ -118,6 +118,7 @@ class RecipeCostApp(tk.Tk):
 
         ttk.Label(add_row, text="Ingredient").grid(row=0, column=0, padx=(0, 6))
         self.ingredient_name_var = tk.StringVar()
+        self.ingredient_name_var.trace_add("write", lambda *_args: self.filter_ingredient_combo())
         self.ingredient_combo = ttk.Combobox(add_row, textvariable=self.ingredient_name_var)
         self.ingredient_combo.grid(row=0, column=1, sticky="ew", padx=(0, 10))
 
@@ -137,10 +138,17 @@ class RecipeCostApp(tk.Tk):
 
         ingredient_buttons = ttk.Frame(right)
         ingredient_buttons.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(8, 0))
-        ingredient_buttons.columnconfigure((0, 1, 2), weight=1)
+        ingredient_buttons.columnconfigure((0, 1, 2, 3), weight=1)
         ttk.Button(ingredient_buttons, text="Remove Ingredient", command=self.remove_ingredient).grid(row=0, column=0, sticky="ew", padx=(0, 4))
-        ttk.Button(ingredient_buttons, text="Save Recipe", command=self.save_recipe_from_editor).grid(row=0, column=1, sticky="ew", padx=4)
-        ttk.Button(ingredient_buttons, text="Reload Selected", command=self.load_selected_recipe).grid(row=0, column=2, sticky="ew", padx=(4, 0))
+        self.create_ingredient_recipe_button = ttk.Button(
+            ingredient_buttons,
+            text="Create Recipe for Ingredient",
+            command=self.create_recipe_for_selected_ingredient,
+            state="disabled",
+        )
+        self.create_ingredient_recipe_button.grid(row=0, column=1, sticky="ew", padx=4)
+        ttk.Button(ingredient_buttons, text="Save Recipe", command=self.save_recipe_from_editor).grid(row=0, column=2, sticky="ew", padx=4)
+        ttk.Button(ingredient_buttons, text="Reload Selected", command=self.load_selected_recipe).grid(row=0, column=3, sticky="ew", padx=(4, 0))
 
     def _build_prices_tab(self) -> None:
         root = self.prices_tab
@@ -258,6 +266,21 @@ class RecipeCostApp(tk.Tk):
         self.refresh_prices()
         self.refresh_item_combos()
 
+    @staticmethod
+    def filter_items(items: list[str], filter_text: str) -> list[str]:
+        """Return items that match the current combobox search text."""
+        needle = filter_text.casefold().strip()
+        if not needle:
+            return items
+        return [item for item in items if needle in item.casefold()]
+
+    def filter_ingredient_combo(self) -> None:
+        """Narrow ingredient suggestions as the user types in the editor."""
+        if not hasattr(self, "ingredient_combo"):
+            return
+        typed_text = self.ingredient_name_var.get()
+        self.ingredient_combo["values"] = self.filter_items(self.all_items(), typed_text)
+
     def refresh_recipe_list(self) -> None:
         current = self.selected_recipe
         self.recipe_list.delete(0, tk.END)
@@ -281,7 +304,7 @@ class RecipeCostApp(tk.Tk):
     def refresh_item_combos(self) -> None:
         all_items = self.all_items()
         self.calc_item_combo["values"] = all_items
-        self.ingredient_combo["values"] = all_items
+        self.ingredient_combo["values"] = self.filter_items(all_items, self.ingredient_name_var.get())
         self.price_item_combo["values"] = all_items
         if not self.calc_item_var.get() and all_items:
             preferred = "Solar Panel III" if "Solar Panel III" in all_items else all_items[0]
@@ -303,6 +326,7 @@ class RecipeCostApp(tk.Tk):
         self.recipe_name_var.set(self.selected_recipe)
         self.clear_ingredient_inputs()
         self.load_ingredients_into_editor(self.data["recipes"][self.selected_recipe])
+        self.update_create_ingredient_recipe_button(None)
         self.set_status(f"Editing recipe: {self.selected_recipe}")
 
     def load_ingredients_into_editor(self, ingredients: dict[str, float]) -> None:
@@ -316,6 +340,7 @@ class RecipeCostApp(tk.Tk):
         self.recipe_name_var.set("")
         self.clear_ingredient_inputs()
         self.load_ingredients_into_editor({})
+        self.update_create_ingredient_recipe_button(None)
         self.set_status("Ready for a new recipe.")
 
     def delete_recipe(self) -> None:
@@ -337,10 +362,38 @@ class RecipeCostApp(tk.Tk):
     def on_ingredient_select(self, _event: tk.Event | None = None) -> None:
         selected = self.ingredients_tree.selection()
         if not selected:
+            self.update_create_ingredient_recipe_button(None)
             return
         item_name, qty = self.ingredients_tree.item(selected[0], "values")
         self.ingredient_name_var.set(item_name)
         self.ingredient_qty_var.set(qty)
+        self.update_create_ingredient_recipe_button(item_name)
+
+    def update_create_ingredient_recipe_button(self, item_name: str | None) -> None:
+        if not hasattr(self, "create_ingredient_recipe_button"):
+            return
+        item_name = normalise_name(item_name or "")
+        can_create = bool(item_name) and item_name not in self.data["recipes"]
+        self.create_ingredient_recipe_button.configure(state="normal" if can_create else "disabled")
+
+    def create_recipe_for_selected_ingredient(self) -> None:
+        selected = self.ingredients_tree.selection()
+        if not selected:
+            messagebox.showwarning("No ingredient selected", "Select an ingredient first.")
+            return
+        item_name = normalise_name(self.ingredients_tree.item(selected[0], "values")[0])
+        if item_name in self.data["recipes"]:
+            self.selected_recipe = item_name
+            self.load_selected_recipe()
+            self.select_recipe_in_list(item_name)
+            return
+
+        self.selected_recipe = None
+        self.recipe_name_var.set(item_name)
+        self.clear_ingredient_inputs()
+        self.load_ingredients_into_editor({})
+        self.update_create_ingredient_recipe_button(None)
+        self.set_status(f"Ready to create recipe for {item_name}.")
 
     def add_or_update_ingredient(self) -> None:
         item_name = normalise_name(self.ingredient_name_var.get())
@@ -374,6 +427,7 @@ class RecipeCostApp(tk.Tk):
             return
         self.ingredients_tree.delete(selected[0])
         self.clear_ingredient_inputs()
+        self.update_create_ingredient_recipe_button(None)
         self.set_status("Removed ingredient from editor.")
 
     def clear_ingredient_inputs(self) -> None:
