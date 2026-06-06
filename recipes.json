@@ -1,0 +1,43 @@
+{
+    "prices": {
+        "Cobblestone": 0.0,
+        "Glass": 0.0,
+        "Iron Block": 0.0,
+        "Iron Ingot": 0.0,
+        "Mirror": 0.0,
+        "Photovoltaic Cell I": 0.0,
+        "Piston": 0.0,
+        "Redstone Dust": 0.0,
+        "Redstone Repeater": 0.0,
+        "Solar Panel I": 0.0,
+        "Solar Panel II": 0.0,
+        "Wooden Plank": 0.0
+    },
+    "recipes": {
+        "Mirror": {
+            "Glass": 3.0,
+            "Iron Ingot": 1.0
+        },
+        "Piston": {
+            "Cobblestone": 4.0,
+            "Iron Ingot": 1.0,
+            "Redstone Dust": 1.0,
+            "Wooden Plank": 3.0
+        },
+        "Solar Panel I": {
+            "Mirror": 3.0,
+            "Redstone Dust": 1.0,
+            "Wooden Plank": 5.0
+        },
+        "Solar Panel II": {
+            "Piston": 1.0,
+            "Solar Panel I": 8.0
+        },
+        "Solar Panel III": {
+            "Iron Block": 1.0,
+            "Photovoltaic Cell I": 3.0,
+            "Redstone Repeater": 1.0,
+            "Solar Panel II": 4.0
+        }
+    }
+}
