@@ -4,6 +4,7 @@
         "Glass": 0.0,
         "Iron Block": 0.0,
         "Iron Ingot": 0.0,
+        "Lapis Lazuli": 0.0,
         "Mirror": 0.0,
         "Photovoltaic Cell I": 0.0,
         "Piston": 0.0,
@@ -14,9 +15,17 @@
         "Wooden Plank": 0.0
     },
     "recipes": {
+        "Iron Block": {
+            "Iron Ingot": 9.0
+        },
         "Mirror": {
             "Glass": 3.0,
             "Iron Ingot": 1.0
+        },
+        "Photovoltaic Cell I": {
+            "Glass": 3.0,
+            "Lapis Lazuli": 3.0,
+            "Mirror": 3.0
         },
         "Piston": {
             "Cobblestone": 4.0,
